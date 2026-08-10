@@ -1,0 +1,158 @@
+# Local dev stack — no Docker Hub account required.
+# Images come from AWS Public ECR (official mirrors) or are built on your machine.
+#
+# Start everything (API + storefront):
+#   docker compose --profile ui up --build
+#   Open http://localhost:8888  (8888 avoids OrbStack's use of 8080)
+#
+# Backend only (no nginx / frontend):
+#   docker compose up --build
+#
+# Optional LocalStack SQS (order events + notification worker):
+#   docker compose --profile aws --profile ui up --build
+
+# Build once on `auth`; every other service reuses the same local tag.
+x-app-image: &app-image
+  image: b2b-platform-app:local
+  pull_policy: never
+
+x-db-env: &db-env
+  DB_CREDENTIALS_SOURCE: env
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_NAME: ${POSTGRES_DB:-b2b}
+  ENVIRONMENT: local
+  OTEL_TRACES_EXPORTER: none
+
+x-aws-env: &aws-env
+  AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-eu-west-2}
+  AWS_ENDPOINT_URL: http://localstack:4566
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  SQS_QUEUE_NAME: ${SQS_QUEUE_NAME:-order-completed}
+
+services:
+  postgres:
+    image: public.ecr.aws/docker/library/postgres:16-alpine
+    pull_policy: missing
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-b2b}
+      AUTH_PW: ${AUTH_PW:-auth_local_pw}
+      PRODUCT_PW: ${PRODUCT_PW:-product_local_pw}
+      ORDER_PW: ${ORDER_PW:-order_local_pw}
+      PAYMENT_PW: ${PAYMENT_PW:-payment_local_pw}
+      NOTIFICATION_PW: ${NOTIFICATION_PW:-notification_local_pw}
+      EXPORTER_PW: ${EXPORTER_PW:-exporter_local_pw}
+    volumes:
+      - ./app/db/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d b2b"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  localstack:
+    profiles: [aws]
+    image: public.ecr.aws/localstack/localstack:3
+    pull_policy: missing
+    environment:
+      SERVICES: sqs
+      DEFAULT_REGION: ${AWS_DEFAULT_REGION:-eu-west-2}
+    ports:
+      - "4566:4566"
+
+  auth:
+    <<: *app-image
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: uvicorn app.services.auth.main:app --host 0.0.0.0 --port 8000
+    environment:
+      <<: *db-env
+      DB_USER: auth_user
+      DB_PASSWORD: ${AUTH_PW:-auth_local_pw}
+      DB_SCHEMA: auth_schema
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  product:
+    <<: *app-image
+    command: uvicorn app.services.product.main:app --host 0.0.0.0 --port 8000
+    environment:
+      <<: *db-env
+      DB_USER: product_user
+      DB_PASSWORD: ${PRODUCT_PW:-product_local_pw}
+      DB_SCHEMA: product_schema
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  order:
+    <<: *app-image
+    command: uvicorn app.services.order.main:app --host 0.0.0.0 --port 8000
+    environment:
+      <<: *db-env
+      DB_USER: order_user
+      DB_PASSWORD: ${ORDER_PW:-order_local_pw}
+      DB_SCHEMA: order_schema
+      PRODUCT_SERVICE_URL: http://product:8000
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-eu-west-2}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      SQS_QUEUE_NAME: ${SQS_QUEUE_NAME:-order-completed}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      product:
+        condition: service_started
+
+  payment:
+    <<: *app-image
+    command: uvicorn app.services.payment.main:app --host 0.0.0.0 --port 8000
+    environment:
+      <<: *db-env
+      DB_USER: payment_user
+      DB_PASSWORD: ${PAYMENT_PW:-payment_local_pw}
+      DB_SCHEMA: payment_schema
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  notification:
+    <<: *app-image
+    command: uvicorn app.services.notification.main:app --host 0.0.0.0 --port 8000
+    environment:
+      <<: *db-env
+      DB_USER: notification_user
+      DB_PASSWORD: ${NOTIFICATION_PW:-notification_local_pw}
+      DB_SCHEMA: notification_schema
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-eu-west-2}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      SQS_QUEUE_NAME: ${SQS_QUEUE_NAME:-order-completed}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  gateway:
+    profiles: [ui]
+    image: public.ecr.aws/docker/library/nginx:1.27-alpine
+    pull_policy: missing
+    ports:
+      - "8888:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./eks-frontend/index.html:/usr/share/nginx/html/index.html:ro
+    depends_on:
+      - auth
+      - product
+      - order
+      - payment
+      - notification

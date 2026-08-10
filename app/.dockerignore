@@ -1,0 +1,8 @@
+.git
+.env
+load-tests
+eks-frontend
+gateway
+**/__pycache__
+**/*.pyc
+**/.pytest_cache

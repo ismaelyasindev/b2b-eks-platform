@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Boutique</title>
+  <meta name="description" content="Online Boutique — timeless fashion and lifestyle accessories, thoughtfully curated." />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gblue: { DEFAULT: "#4285F4", dark: "#3367D6", light: "#E8F0FE" },
+          },
+          fontFamily: {
+            sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+            display: ["Fraunces", "Georgia", "serif"],
+          },
+          boxShadow: {
+            card: "0 1px 2px 0 rgba(15,23,42,0.04), 0 8px 24px -10px rgba(15,23,42,0.10)",
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+    .font-display { font-family: "Fraunces", Georgia, serif; }
+    .drawer { transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1); }
+    .overlay { transition: opacity 0.32s ease; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .toast-enter { animation: toast-in 0.25s ease forwards; }
+    .product-card { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+    .product-card:hover { transform: translateY(-4px); }
+    @keyframes shimmer { 0% { background-position: -480px 0; } 100% { background-position: 480px 0; } }
+    .skeleton { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%); background-size: 960px 100%; animation: shimmer 1.4s infinite linear; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  </style>
+</head>
+
+<body class="bg-white text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- ============================ ANNOUNCEMENT BAR ============================ -->
+  <div class="bg-slate-900 text-center text-[13px] font-medium text-slate-100">
+    <p class="px-4 py-2">Complimentary shipping on orders over <span class="font-semibold text-white">$75</span> · New season arrivals just landed</p>
+  </div>
+
+  <!-- ============================ NAVBAR ============================ -->
+  <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
+      <a href="#" class="flex items-center gap-2.5">
+        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-white">
+          <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+          </svg>
+        </span>
+        <div class="leading-tight">
+          <p class="font-display text-xl font-600 tracking-tight text-slate-900">Online Boutique</p>
+          <p class="hidden text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400 sm:block">Fashion &amp; Lifestyle</p>
+        </div>
+      </a>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="/docs" target="_blank" rel="noopener"
+           class="hidden items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:inline-flex">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          API Docs
+        </a>
+
+        <div id="auth-area" class="flex items-center gap-2"></div>
+
+        <button id="cart-btn" type="button"
+          class="relative inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:border-slate-300 hover:bg-slate-50">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <span class="hidden sm:inline">Bag</span>
+          <span id="cart-count" class="absolute -right-1.5 -top-1.5 hidden h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-gblue px-1 text-[11px] font-bold text-white ring-2 ring-white">0</span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ============================ HERO ============================ -->
+  <section class="border-b border-slate-100 bg-gradient-to-b from-slate-50 to-white">
+    <div class="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2 lg:px-8">
+      <div>
+        <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+          Curated Edit · 2026
+        </div>
+        <h1 class="mt-5 max-w-xl font-display text-4xl font-600 leading-[1.05] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+          Timeless pieces for the everyday.
+        </h1>
+        <p class="mt-5 max-w-md text-base leading-relaxed text-slate-500">
+          Sunglasses, apparel, watches and accessories — thoughtfully designed and quietly luxurious.
+          A boutique selection of essentials worth keeping.
+        </p>
+        <div class="mt-7 flex flex-wrap items-center gap-3">
+          <a href="#catalog" class="inline-flex items-center gap-2 rounded-full bg-gblue px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gblue-dark">
+            Shop the collection
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+          <a href="#catalog" class="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            New arrivals
+          </a>
+        </div>
+        <div class="mt-8 flex items-center gap-6 text-sm text-slate-400">
+          <span class="flex items-center gap-1.5"><svg class="h-4 w-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Free returns</span>
+          <span class="flex items-center gap-1.5"><svg class="h-4 w-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Secure checkout</span>
+          <span class="hidden items-center gap-1.5 sm:flex"><svg class="h-4 w-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Ethically sourced</span>
+        </div>
+      </div>
+
+      <div class="relative hidden lg:block">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="flex aspect-square items-center justify-center rounded-3xl bg-slate-50 ring-1 ring-slate-100 text-slate-700">
+            <svg viewBox="0 0 24 24" class="h-24 w-24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h20"/><path d="M3 8v3a3.5 3.5 0 0 0 7 0V8"/><path d="M14 8v3a3.5 3.5 0 0 0 7 0V8"/><path d="M10 10h4"/></svg>
+          </div>
+          <div class="mt-8 flex aspect-square items-center justify-center rounded-3xl bg-slate-900 text-white">
+            <svg viewBox="0 0 24 24" class="h-24 w-24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 10v2l1.5 1"/><path d="M9 7 8.5 3h7L15 7"/><path d="M9 17l-.5 4h7l-.5-4"/></svg>
+          </div>
+          <div class="flex aspect-square items-center justify-center rounded-3xl bg-gblue-light text-gblue-dark">
+            <svg viewBox="0 0 24 24" class="h-24 w-24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3a4 4 0 0 0 8 0"/><path d="M8 3 4 6l2 3 2-1v11h8V8l2 1 2-3-4-3"/></svg>
+          </div>
+          <div class="mt-8 flex aspect-square items-center justify-center rounded-3xl bg-slate-50 ring-1 ring-slate-100 text-slate-700">
+            <svg viewBox="0 0 24 24" class="h-24 w-24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c0-1 .6-1.8 1.8-1.8H7l2-3c1.6.6 3.2.9 5 .9 2 0 3.7.6 5 2.1l1.4 1.5c.6.6.2 1.6-.7 1.6H4a1 1 0 0 1-1-1.3z"/><path d="M9 13.4h4.5"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ CATALOG ============================ -->
+  <main id="catalog" class="mx-auto w-full max-w-7xl flex-1 px-4 py-12 sm:px-6 lg:px-8">
+    <div class="mb-7 flex items-end justify-between">
+      <div>
+        <h2 class="font-display text-2xl font-600 tracking-tight text-slate-900">Featured Collection</h2>
+        <p class="mt-1 text-sm text-slate-500">Handpicked accessories, apparel and lifestyle pieces.</p>
+      </div>
+      <span id="catalog-meta" class="hidden text-sm font-medium text-slate-400 sm:block"></span>
+    </div>
+
+    <div id="product-grid" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+  </main>
+
+  <!-- ============================ FOOTER ============================ -->
+  <footer class="border-t border-slate-200 bg-slate-50">
+    <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-7 text-sm text-slate-400 sm:flex-row sm:px-6 lg:px-8">
+      <p class="font-display text-base text-slate-500">Online Boutique</p>
+      <p>Crafted essentials · Free returns · Secure checkout</p>
+    </div>
+  </footer>
+
+  <!-- ============================ CART DRAWER ============================ -->
+  <div id="cart-overlay" class="overlay fixed inset-0 z-40 bg-slate-900/40 opacity-0 pointer-events-none"></div>
+
+  <aside id="cart-drawer" class="drawer fixed right-0 top-0 z-50 flex h-full w-full max-w-md translate-x-full flex-col bg-white shadow-2xl">
+    <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+      <h3 class="flex items-center gap-2 font-display text-lg font-600 text-slate-900">
+        <svg class="h-5 w-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Your Bag
+      </h3>
+      <button id="cart-close" type="button" class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <div id="cart-items" class="flex-1 overflow-y-auto px-5 py-4"></div>
+
+    <div class="border-t border-slate-200 px-5 py-4">
+      <div id="auth-warning" class="mb-3 hidden items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+        <svg class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        <span>Please sign in to complete your purchase.</span>
+      </div>
+
+      <div class="mb-3 flex items-center justify-between">
+        <span class="text-sm font-medium text-slate-500">Subtotal</span>
+        <span id="cart-subtotal" class="font-display text-xl font-600 text-slate-900">$0.00</span>
+      </div>
+      <button id="checkout-btn" type="button"
+        class="flex w-full items-center justify-center gap-2 rounded-full bg-gblue px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-gblue-dark disabled:cursor-not-allowed disabled:bg-slate-300">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Checkout
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============================ LOGIN MODAL ============================ -->
+  <div id="login-overlay" class="overlay fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4">
+    <div id="login-modal" class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+      <div class="mb-1 flex items-center justify-between">
+        <h3 class="font-display text-xl font-600 text-slate-900">Welcome back</h3>
+        <button id="login-close" type="button" class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <p class="mb-5 text-sm text-slate-500">Sign in to place your order and track your bag.</p>
+
+      <button id="recruiter-fill" type="button"
+        class="mb-5 flex w-full items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Recruiter Auto-Fill &amp; Sign In
+      </button>
+
+      <div class="relative mb-5 flex items-center">
+        <span class="h-px flex-1 bg-slate-200"></span>
+        <span class="px-3 text-xs font-medium uppercase tracking-wide text-slate-400">or manually</span>
+        <span class="h-px flex-1 bg-slate-200"></span>
+      </div>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label for="login-email" class="mb-1 block text-sm font-medium text-slate-700">Email</label>
+          <input id="login-email" type="email" autocomplete="username" required
+            class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-gblue focus:ring-2 focus:ring-gblue/30"
+            placeholder="recruiter@company.com" />
+        </div>
+        <div>
+          <label for="login-password" class="mb-1 block text-sm font-medium text-slate-700">Password</label>
+          <input id="login-password" type="password" autocomplete="current-password" required
+            class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-gblue focus:ring-2 focus:ring-gblue/30"
+            placeholder="••••••••" />
+        </div>
+        <button id="login-submit" type="submit"
+          class="flex w-full items-center justify-center gap-2 rounded-full bg-gblue px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gblue-dark disabled:opacity-60">
+          Sign In
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================ TOASTS ============================ -->
+  <div id="toast-stack" class="fixed bottom-5 right-5 z-[60] flex w-[min(92vw,22rem)] flex-col gap-2.5"></div>
+
+  <!-- ============================ APPLICATION SCRIPT ============================ -->
+  <script>
+    "use strict";
+
+    /* ---------------------------- State ---------------------------- */
+    const TOKEN_KEY = "online_boutique_token";
+    const state = {
+      products: [],
+      cart: [],            // { id, name, sku, price, stock, qty, icon }
+      token: localStorage.getItem(TOKEN_KEY) || null,
+    };
+
+    /* ---------------------------- DOM refs ---------------------------- */
+    const $ = (sel) => document.querySelector(sel);
+    const grid = $("#product-grid");
+    const authArea = $("#auth-area");
+    const cartItemsEl = $("#cart-items");
+    const cartCountEl = $("#cart-count");
+    const cartSubtotalEl = $("#cart-subtotal");
+    const checkoutBtn = $("#checkout-btn");
+    const authWarning = $("#auth-warning");
+
+    /* ---------------------------- Helpers ---------------------------- */
+    const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+    const formatPrice = (v) => money.format(Number(v) || 0);
+    const escapeHtml = (s) =>
+      String(s ?? "").replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    /* ---------------------------- Toasts ---------------------------- */
+    function toast(message, type = "info") {
+      const palette = {
+        success: { bar: "bg-emerald-500", icon: "text-emerald-600", ring: "border-emerald-200" },
+        error:   { bar: "bg-rose-500",    icon: "text-rose-600",    ring: "border-rose-200" },
+        info:    { bar: "bg-gblue",       icon: "text-gblue",       ring: "border-slate-200" },
+      }[type] || {};
+      const icons = {
+        success: '<path d="M20 6 9 17l-5-5"/>',
+        error:   '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        info:    '<path d="M12 16v-4"/><path d="M12 8h.01"/><circle cx="12" cy="12" r="10"/>',
+      };
+      const el = document.createElement("div");
+      el.className = `toast-enter relative flex items-start gap-3 overflow-hidden rounded-xl border ${palette.ring} bg-white px-4 py-3 pr-9 shadow-card`;
+      el.innerHTML = `
+        <span class="absolute left-0 top-0 h-full w-1 ${palette.bar}"></span>
+        <svg class="mt-0.5 h-5 w-5 shrink-0 ${palette.icon}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[type] || icons.info}</svg>
+        <p class="text-sm font-medium leading-snug text-slate-700">${escapeHtml(message)}</p>
+        <button class="absolute right-2 top-2 rounded p-1 text-slate-300 hover:text-slate-500" aria-label="Dismiss">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>`;
+      const remove = () => {
+        el.style.transition = "opacity .2s ease, transform .2s ease";
+        el.style.opacity = "0";
+        el.style.transform = "translateX(12px)";
+        setTimeout(() => el.remove(), 200);
+      };
+      el.querySelector("button").addEventListener("click", remove);
+      $("#toast-stack").appendChild(el);
+      setTimeout(remove, type === "error" ? 6000 : 3500);
+    }
+
+    /* ---------------------------- Inline retail SVGs ----------------------------
+       Elegant, uniform vector illustrations (h-20 w-20, slate strokes). No
+       external image files are ever requested.                                  */
+    const ICONS = {
+      sunglasses: `
+        <svg viewBox="0 0 24 24" class="h-20 w-20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 8h20"/>
+          <path d="M3 8v3a3.5 3.5 0 0 0 7 0V8"/>
+          <path d="M14 8v3a3.5 3.5 0 0 0 7 0V8"/>
+          <path d="M10 10c.6-.4 3.4-.4 4 0"/>
+        </svg>`,
+      tank: `
+        <svg viewBox="0 0 24 24" class="h-20 w-20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3a4 4 0 0 0 8 0"/>
+          <path d="M8 3 4 6l2 3 2-1v11h8V8l2 1 2-3-4-3"/>
+        </svg>`,
+      watch: `
+        <svg viewBox="0 0 24 24" class="h-20 w-20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 10v2l1.5 1"/>
+          <path d="M9 7 8.5 3h7L15 7"/>
+          <path d="M9 17l-.5 4h7l-.5-4"/>
+        </svg>`,
+      loafer: `
+        <svg viewBox="0 0 24 24" class="h-20 w-20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 16c0-1 .6-1.8 1.8-1.8H7l2-3c1.6.6 3.2.9 5 .9 2 0 3.7.6 5 2.1l1.4 1.5c.6.6.2 1.6-.7 1.6H4a1 1 0 0 1-1-1.3z"/>
+          <path d="M9 13.4h4.5"/>
+        </svg>`,
+      hairdryer: `
+        <svg viewBox="0 0 24 24" class="h-20 w-20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7h8l9-2v8l-9-2H3a2 2 0 0 1 0-4z"/>
+          <path d="M6.5 11l-1.2 6h2.7l-.9-6"/>
+          <circle cx="6.5" cy="9" r="1"/>
+        </svg>`,
+      candle: `
+        <svg viewBox="0 0 24 24" class="h-20 w-20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3c1.6 2 2.5 3.2 2.5 4.5a2.5 2.5 0 0 1-5 0C9.5 6.2 10.4 5 12 3z"/>
+          <path d="M12 9.5V13"/>
+          <path d="M7 13h10l-1 6a2 2 0 0 1-2 1.7h-4A2 2 0 0 1 8 19z"/>
+        </svg>`,
+      bag: `
+        <svg viewBox="0 0 24 24" class="h-20 w-20" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>`,
+    };
+
+    /* ---------------------------- Retail mapping layer ----------------------------
+       The backend seeds technical placeholder names. We intercept the product
+       array and override name/description/icon for DISPLAY ONLY — the real
+       backend id & sku are preserved so ordering stays intact.                   */
+    const RETAIL_MAP = [
+      { test: (p) => p.id === 1 || /WIDGET/i.test(p.sku || ""), name: "Pilot Sunglasses",            description: "Classic aviator sunglasses with UV400 protection lenses.",                          icon: "sunglasses", category: "Accessories", image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600&auto=format&fit=crop&q=80" },
+      { test: (p) => p.id === 2 || /STORE/i.test(p.sku || ""),  name: "Organic Cotton Tank Top",     description: "Breathable, lightweight combed cotton top perfect for layering.",                  icon: "tank",       category: "Apparel",     image: "https://images.unsplash.com/photo-1620799139652-715e4d5b232d?w=600&auto=format&fit=crop&q=80" },
+      { test: (p) => p.id === 3 || /CDN/i.test(p.sku || ""),    name: "Minimalist Chronograph Watch", description: "Stainless steel quartz watch with a brushed tan leather strap.",                  icon: "watch",      category: "Watches",     image: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=600&auto=format&fit=crop&q=80" },
+      { test: (p) => p.id === 4 || /ENGINE/i.test(p.sku || ""), name: "Suede Platform Loafers",      description: "Hand-stitched premium suede loafers with ergonomic cushioned insoles.",            icon: "loafer",     category: "Footwear",    image: "https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?w=600&auto=format&fit=crop&q=80" },
+      { test: (p) => p.id === 5,                                 name: "Ionic Travel Hairdryer",      description: "Compact 1800W professional hairdryer with folding handle and heat concentration nozzle.", icon: "hairdryer", category: "Beauty",   image: "https://images.unsplash.com/photo-1620331309205-b5a4669ac526?w=600&auto=format&fit=crop&q=80" },
+      { test: (p) => p.id === 6,                                 name: "Textured Ceramic Candle Holder", description: "Handmade minimalist earthenware vessel designed for standard tealights or small pillar candles.", icon: "candle", category: "Home", image: "https://images.unsplash.com/photo-1603006905003-be475563bc59?w=600&auto=format&fit=crop&q=80" },
+    ];
+
+    function applyRetailMapping(p) {
+      const match = RETAIL_MAP.find((m) => m.test(p));
+      if (!match) {
+        return { ...p, _icon: "bag", _category: "Boutique", _image: null };
+      }
+      return {
+        ...p,
+        name: match.name,
+        description: match.description,
+        _icon: match.icon,
+        _category: match.category,
+        _image: match.image || null,
+      };
+    }
+
+    /* Gracefully swap a broken catalog image for its inline SVG fallback. */
+    function imgFallback(el, iconKey) {
+      const wrap = document.createElement("div");
+      wrap.className = "flex h-48 w-full items-center justify-center bg-slate-50 text-slate-300";
+      wrap.innerHTML = ICONS[iconKey] || ICONS.bag;
+      el.replaceWith(wrap);
+    }
+
+    function productIllustration(p) {
+      const media = p._image
+        ? `<img src="${p._image}" alt="${escapeHtml(p.name)}" loading="lazy" decoding="async"
+                onerror="imgFallback(this, '${p._icon}')"
+                class="object-contain h-48 w-full p-4 transition group-hover:scale-105" />`
+        : `<div class="flex h-48 w-full items-center justify-center bg-slate-50 text-slate-700">${ICONS[p._icon] || ICONS.bag}</div>`;
+      return `
+        <div class="relative w-full overflow-hidden border-b border-slate-100 bg-slate-50">
+          ${media}
+          <span class="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium text-slate-500 ring-1 ring-slate-200 backdrop-blur">${escapeHtml(p._category)}</span>
+        </div>`;
+    }
+
+    /* ---------------------------- Catalog rendering ---------------------------- */
+    function renderSkeletons(n = 8) {
+      grid.innerHTML = Array.from({ length: n }).map(() => `
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+          <div class="skeleton h-44 w-full"></div>
+          <div class="space-y-3 p-5">
+            <div class="skeleton h-4 w-3/4 rounded"></div>
+            <div class="skeleton h-3 w-full rounded"></div>
+            <div class="skeleton h-3 w-2/3 rounded"></div>
+            <div class="skeleton h-10 w-full rounded-full"></div>
+          </div>
+        </div>`).join("");
+    }
+
+    function renderProducts() {
+      if (!state.products.length) {
+        grid.innerHTML = `
+          <div class="col-span-full rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+            <p class="text-sm font-medium text-slate-500">No products available right now.</p>
+          </div>`;
+        return;
+      }
+      $("#catalog-meta").textContent = `${state.products.length} items`;
+      $("#catalog-meta").classList.remove("hidden");
+
+      grid.innerHTML = state.products.map((p) => {
+        const inStock = p.stock_quantity === undefined || p.stock_quantity > 0;
+        return `
+        <div class="product-card group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card hover:border-slate-300 hover:shadow-lg">
+          ${productIllustration(p)}
+          <div class="flex flex-1 flex-col p-5">
+            <h3 class="text-[15px] font-semibold leading-snug text-slate-900">${escapeHtml(p.name)}</h3>
+            <p class="mt-1.5 line-clamp-2 text-sm leading-relaxed text-slate-500">${escapeHtml(p.description || "A thoughtfully designed boutique essential.")}</p>
+            <div class="mt-3 flex items-center gap-2">
+              <span class="inline-flex items-center rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] font-semibold tracking-tight text-slate-500">${escapeHtml(p.sku || "—")}</span>
+              ${inStock
+                ? `<span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>${p.stock_quantity ?? "In"} in stock</span>`
+                : `<span class="inline-flex items-center gap-1 text-[11px] font-medium text-rose-500"><span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>Sold out</span>`}
+            </div>
+            <div class="mt-5 flex items-center justify-between gap-3">
+              <span class="font-display text-xl font-600 tracking-tight text-slate-900">${formatPrice(p.price)}</span>
+              <button data-add="${p.id}" ${inStock ? "" : "disabled"}
+                class="inline-flex items-center gap-1.5 rounded-full bg-gblue px-4 py-2 text-sm font-semibold text-white transition hover:bg-gblue-dark disabled:cursor-not-allowed disabled:bg-slate-300">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    async function loadProducts() {
+      renderSkeletons();
+      try {
+        const res = await fetch("/api/product/list");
+        if (!res.ok) throw new Error(`Catalog request failed (HTTP ${res.status})`);
+        const data = await res.json();
+        state.products = (Array.isArray(data) ? data : []).map(applyRetailMapping);
+        renderProducts();
+      } catch (err) {
+        grid.innerHTML = `
+          <div class="col-span-full rounded-2xl border border-rose-200 bg-rose-50 p-10 text-center">
+            <p class="text-sm font-semibold text-rose-700">Failed to load the collection</p>
+            <p class="mt-1 text-sm text-rose-500">${escapeHtml(err.message)}</p>
+          </div>`;
+        toast(`Catalog error: ${err.message}`, "error");
+      }
+    }
+
+    /* ---------------------------- Cart logic ---------------------------- */
+    function maxFor(item) {
+      return typeof item.stock === "number" && item.stock > 0 ? item.stock : 99;
+    }
+
+    function addToCart(productId) {
+      const p = state.products.find((x) => x.id === productId);
+      if (!p) return;
+      const existing = state.cart.find((c) => c.id === productId);
+      const cap = typeof p.stock_quantity === "number" && p.stock_quantity > 0 ? p.stock_quantity : 99;
+      if (existing) {
+        if (existing.qty >= cap) { toast(`Only ${cap} of ${p.name} available`, "error"); return; }
+        existing.qty += 1;
+      } else {
+        state.cart.push({ id: p.id, name: p.name, sku: p.sku, price: Number(p.price) || 0, stock: p.stock_quantity, qty: 1, icon: p._icon });
+      }
+      renderCart();
+      toast(`Item added to cart · ${p.name}`, "success");
+    }
+
+    function changeQty(productId, delta) {
+      const item = state.cart.find((c) => c.id === productId);
+      if (!item) return;
+      const next = item.qty + delta;
+      if (next <= 0) { state.cart = state.cart.filter((c) => c.id !== productId); }
+      else if (next > maxFor(item)) { toast(`Only ${maxFor(item)} of ${item.name} available`, "error"); return; }
+      else { item.qty = next; }
+      renderCart();
+    }
+
+    function removeItem(productId) {
+      state.cart = state.cart.filter((c) => c.id !== productId);
+      renderCart();
+    }
+
+    function cartSubtotal() { return state.cart.reduce((sum, c) => sum + c.price * c.qty, 0); }
+    function cartCount() { return state.cart.reduce((sum, c) => sum + c.qty, 0); }
+
+    function renderCart() {
+      const count = cartCount();
+      if (count > 0) {
+        cartCountEl.textContent = count;
+        cartCountEl.classList.remove("hidden");
+        cartCountEl.classList.add("inline-flex");
+      } else {
+        cartCountEl.classList.add("hidden");
+        cartCountEl.classList.remove("inline-flex");
+      }
+
+      if (!state.cart.length) {
+        cartItemsEl.innerHTML = `
+          <div class="flex h-full flex-col items-center justify-center py-16 text-center">
+            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </div>
+            <p class="text-sm font-medium text-slate-500">Your bag is empty</p>
+            <p class="mt-1 text-xs text-slate-400">Add a few favourites to get started.</p>
+          </div>`;
+      } else {
+        cartItemsEl.innerHTML = state.cart.map((c) => `
+          <div class="mb-3 flex items-center gap-3 rounded-2xl border border-slate-200 p-3">
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
+              <div class="h-8 w-8">${(ICONS[c.icon] || ICONS.bag).replace(/h-20 w-20/g, "h-8 w-8")}</div>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-slate-900">${escapeHtml(c.name)}</p>
+              <p class="font-mono text-[11px] text-slate-400">${escapeHtml(c.sku || "")} · ${formatPrice(c.price)}</p>
+              <div class="mt-2 inline-flex items-center rounded-full border border-slate-200">
+                <button data-dec="${c.id}" class="px-2.5 py-1 text-slate-500 hover:text-slate-900" aria-label="Decrease">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"/></svg>
+                </button>
+                <span class="min-w-[2rem] text-center text-sm font-semibold text-slate-900">${c.qty}</span>
+                <button data-inc="${c.id}" class="px-2.5 py-1 text-slate-500 hover:text-slate-900" aria-label="Increase">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+              <span class="text-sm font-bold text-slate-900">${formatPrice(c.price * c.qty)}</span>
+              <button data-remove="${c.id}" class="text-slate-300 hover:text-rose-500" aria-label="Remove">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              </button>
+            </div>
+          </div>`).join("");
+      }
+
+      cartSubtotalEl.textContent = formatPrice(cartSubtotal());
+      updateCheckoutState();
+    }
+
+    function updateCheckoutState() {
+      const authed = !!state.token;
+      const hasItems = state.cart.length > 0;
+      checkoutBtn.disabled = !authed || !hasItems;
+      authWarning.classList.toggle("hidden", authed);
+      authWarning.classList.toggle("flex", !authed);
+    }
+
+    /* ---------------------------- Drawer + modal toggles ---------------------------- */
+    function openCart() {
+      $("#cart-drawer").classList.remove("translate-x-full");
+      const ov = $("#cart-overlay");
+      ov.classList.remove("opacity-0", "pointer-events-none");
+      ov.classList.add("opacity-100");
+    }
+    function closeCart() {
+      $("#cart-drawer").classList.add("translate-x-full");
+      const ov = $("#cart-overlay");
+      ov.classList.add("opacity-0", "pointer-events-none");
+      ov.classList.remove("opacity-100");
+    }
+    function openLogin() {
+      const ov = $("#login-overlay");
+      ov.classList.remove("hidden");
+      ov.classList.add("flex");
+      setTimeout(() => $("#login-email").focus(), 50);
+    }
+    function closeLogin() {
+      const ov = $("#login-overlay");
+      ov.classList.add("hidden");
+      ov.classList.remove("flex");
+    }
+
+    /* ---------------------------- Auth ---------------------------- */
+    function renderAuth() {
+      if (state.token) {
+        authArea.innerHTML = `
+          <div class="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 sm:flex">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="text-sm font-semibold text-emerald-700">Welcome, Recruiter</span>
+          </div>
+          <button id="logout-btn" type="button"
+            class="rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+            Log Out
+          </button>`;
+        $("#logout-btn").addEventListener("click", logout);
+      } else {
+        authArea.innerHTML = `
+          <button id="signin-btn" type="button"
+            class="inline-flex items-center gap-1.5 rounded-full bg-gblue px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gblue-dark">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+            Sign In
+          </button>`;
+        $("#signin-btn").addEventListener("click", openLogin);
+      }
+      updateCheckoutState();
+    }
+
+    async function login(username, password) {
+      const submitBtn = $("#login-submit");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Signing in…";
+      try {
+        const body = new URLSearchParams();
+        body.append("username", username);
+        body.append("password", password);
+        const res = await fetch("/api/auth/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body,
+        });
+        if (!res.ok) {
+          let detail = `HTTP ${res.status}`;
+          try { const j = await res.json(); detail = j.detail || detail; } catch (_) {}
+          throw new Error(detail);
+        }
+        const data = await res.json();
+        if (!data.access_token) throw new Error("No access token returned by server");
+        state.token = data.access_token;
+        localStorage.setItem(TOKEN_KEY, state.token);
+        renderAuth();
+        closeLogin();
+        toast("Token authorized successfully", "success");
+      } catch (err) {
+        toast(`Sign-in failed: ${err.message}`, "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign In";
+      }
+    }
+
+    function logout() {
+      state.token = null;
+      localStorage.removeItem(TOKEN_KEY);
+      renderAuth();
+      toast("Logged out", "info");
+    }
+
+    /* ---------------------------- Checkout ---------------------------- */
+    async function placeOrder() {
+      if (!state.token) { openLogin(); return; }
+      if (!state.cart.length) return;
+
+      const original = checkoutBtn.innerHTML;
+      checkoutBtn.disabled = true;
+      checkoutBtn.innerHTML = "Placing order…";
+      try {
+        const payload = { items: state.cart.map((c) => ({ product_id: c.id, quantity: c.qty })) };
+        const res = await fetch("/api/order", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${state.token}`, "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.status === 401) {
+          logout();
+          openLogin();
+          throw new Error("Session expired — please sign in again");
+        }
+        if (!res.ok) {
+          let detail = `HTTP ${res.status}`;
+          try { const j = await res.json(); detail = j.detail || JSON.stringify(j); } catch (_) {}
+          throw new Error(detail);
+        }
+
+        const order = await res.json();
+        state.cart = [];
+        renderCart();
+        closeCart();
+        const total = order.total_amount !== undefined ? ` · ${formatPrice(order.total_amount)}` : "";
+        toast(`Order created successfully! #${order.id ?? ""}${total}`, "success");
+      } catch (err) {
+        toast(`Order failed: ${err.message}`, "error");
+      } finally {
+        checkoutBtn.innerHTML = original;
+        updateCheckoutState();
+      }
+    }
+
+    /* ---------------------------- Event wiring ---------------------------- */
+    grid.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-add]");
+      if (btn) addToCart(Number(btn.dataset.add));
+    });
+
+    cartItemsEl.addEventListener("click", (e) => {
+      const inc = e.target.closest("[data-inc]");
+      const dec = e.target.closest("[data-dec]");
+      const rm = e.target.closest("[data-remove]");
+      if (inc) changeQty(Number(inc.dataset.inc), +1);
+      else if (dec) changeQty(Number(dec.dataset.dec), -1);
+      else if (rm) removeItem(Number(rm.dataset.remove));
+    });
+
+    $("#cart-btn").addEventListener("click", openCart);
+    $("#cart-close").addEventListener("click", closeCart);
+    $("#cart-overlay").addEventListener("click", closeCart);
+    $("#checkout-btn").addEventListener("click", placeOrder);
+
+    $("#login-close").addEventListener("click", closeLogin);
+    $("#login-overlay").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeLogin(); });
+    $("#login-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      login($("#login-email").value.trim(), $("#login-password").value);
+    });
+    $("#recruiter-fill").addEventListener("click", () => {
+      $("#login-email").value = "recruiter@company.com";
+      $("#login-password").value = "password123";
+      login("recruiter@company.com", "password123");
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { closeCart(); closeLogin(); }
+    });
+
+    /* ---------------------------- Boot ---------------------------- */
+    renderAuth();
+    renderCart();
+    loadProducts();
+  </script>
+</body>
+</html>
