@@ -3,17 +3,16 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from app.services.auth.models import Tenant, User
+from app.shared.config import settings
+from app.shared.db import get_db
+from app.shared.schemas import Token
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.shared.config import settings
-from app.shared.db import get_db
-from app.shared.schemas import Token
-from app.services.auth.models import Tenant, User
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -2,13 +2,12 @@
 
 from datetime import datetime
 
+from app.services.notification.models import DeliveryLog
+from app.shared.db import get_db
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.shared.db import get_db
-from app.services.notification.models import DeliveryLog
 
 router = APIRouter()
 

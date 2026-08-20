@@ -4,26 +4,24 @@ import logging
 from contextlib import asynccontextmanager
 from decimal import Decimal
 
-from fastapi import FastAPI
-from sqlalchemy import select
-
-from app.shared.config import settings
-from app.shared.db import SessionLocal, init_models
 from app.services.product import models  # noqa: F401 - register tables on Base
 from app.services.product.models import Product
 from app.services.product.routes import router
+from app.shared.config import settings
+from app.shared.db import SessionLocal, init_models
+from fastapi import FastAPI
+from sqlalchemy import select
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("product")
 
-# SKUs align with the frontend's retail translation layer (WIDGET/STORE/CDN/ENGINE).
 SEED_PRODUCTS = [
-    ("Enterprise Cloud Widget", "High-throughput modular automation block.", "B2B-WIDGET-001", Decimal("299.99"), 120),
-    ("Managed Postgres Datastore", "Fully-managed relational storage cluster.", "DB-STORE-2002", Decimal("749.00"), 60),
-    ("Global Edge CDN Node", "Low-latency content delivery node.", "NET-CDN-3003", Decimal("189.99"), 200),
-    ("Compute Automation Engine", "Event-driven autoscaling workflow engine.", "CMP-ENGINE-4004", Decimal("1299.00"), 30),
-    ("Object Storage Vault", "Durable versioned object storage buckets.", "DB-VAULT-5005", Decimal("349.50"), 150),
-    ("Service Mesh Gateway", "Connected node-graph mesh gateway.", "NET-MESH-6006", Decimal("459.00"), 90),
+    ("Stretch Pallet Wrap (23µm, 400m)", "Machine-grade LLDPE wrap for outbound palletising. Sold per roll.", "WH-PKG-1001", Decimal("28.50"), 500),
+    ("Nitrile Exam Gloves (Box of 100)", "Powder-free, ambidextrous, size L. Wholesale carton pricing on request.", "WH-PPE-2002", Decimal("12.40"), 2000),
+    ("Stainless Steel Boltless Shelving", "1800×900×400 mm, 5 levels, 200 kg/shelf. Flat-packed for depot delivery.", "WH-FUR-3003", Decimal("189.00"), 80),
+    ("LED High-Bay Light 150W", "IP65 warehouse fitting, 4000K, 140 lm/W. Includes mounting bracket.", "WH-ELC-4004", Decimal("74.00"), 350),
+    ("Food-Grade HDPE Drum 60L", "UN-rated, tamper-evident lid, stackable. Suitable for dry goods.", "WH-CNT-5005", Decimal("36.00"), 600),
+    ("Desktop Barcode Label Printer", "203 dpi thermal transfer, 4-inch media, USB + Ethernet. Labels sold separately.", "WH-IT-6006", Decimal("249.00"), 45),
 ]
 
 

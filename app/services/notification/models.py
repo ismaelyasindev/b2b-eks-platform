@@ -5,18 +5,18 @@ consumer detect and skip duplicate SQS deliveries (at-least-once semantics).
 """
 
 from datetime import datetime
-
-from sqlalchemy import DateTime, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import ClassVar
 
 from app.shared.db import Base
+from sqlalchemy import DateTime, Integer, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 SCHEMA = "notification_schema"
 
 
 class DeliveryLog(Base):
     __tablename__ = "delivery_logs"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__: ClassVar[dict[str, str]] = {"schema": SCHEMA}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     message_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)

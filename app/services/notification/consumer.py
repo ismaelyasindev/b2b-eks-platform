@@ -12,12 +12,11 @@ import json
 import logging
 
 import boto3
-from botocore.exceptions import BotoCoreError, ClientError
-from sqlalchemy import select
-
+from app.services.notification.models import DeliveryLog
 from app.shared.config import settings
 from app.shared.db import SessionLocal
-from app.services.notification.models import DeliveryLog
+from botocore.exceptions import BotoCoreError, ClientError
+from sqlalchemy import select
 
 logger = logging.getLogger("notification.consumer")
 

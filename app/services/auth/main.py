@@ -4,17 +4,16 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
+from app.services.auth import models  # noqa: F401 - register tables on Base
+from app.services.auth.core.throttle_manager import manager, throttle_enabled
+from app.services.auth.models import Tenant, User
+from app.services.auth.routes import router
+from app.shared.config import settings
+from app.shared.db import SessionLocal, init_models
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from passlib.context import CryptContext
 from sqlalchemy import select
-
-from app.shared.config import settings
-from app.shared.db import SessionLocal, init_models
-from app.services.auth import models  # noqa: F401 - register tables on Base
-from app.services.auth.models import Tenant, User
-from app.services.auth.routes import router
-from app.services.auth.core.throttle_manager import manager, throttle_enabled
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("auth")

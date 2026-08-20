@@ -1,20 +1,9 @@
-# Local dev stack — no Docker Hub account required.
-# Images come from AWS Public ECR (official mirrors) or are built on your machine.
-#
-# Start everything (API + storefront):
-#   docker compose --profile ui up --build
-#   Open http://localhost:8888  (8888 avoids OrbStack's use of 8080)
-#
-# Backend only (no nginx / frontend):
-#   docker compose up --build
-#
-# Optional LocalStack SQS (order events + notification worker):
-#   docker compose --profile aws --profile ui up --build
-
-# Build once on `auth`; every other service reuses the same local tag.
 x-app-image: &app-image
   image: b2b-platform-app:local
   pull_policy: never
+  build:
+    context: .
+    dockerfile: Dockerfile
 
 x-db-env: &db-env
   DB_CREDENTIALS_SOURCE: env
@@ -46,7 +35,7 @@ services:
       NOTIFICATION_PW: ${NOTIFICATION_PW:-notification_local_pw}
       EXPORTER_PW: ${EXPORTER_PW:-exporter_local_pw}
     volumes:
-      - ./app/db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     ports:
       - "5432:5432"
     healthcheck:
@@ -67,10 +56,9 @@ services:
 
   auth:
     <<: *app-image
-    build:
-      context: .
-      dockerfile: Dockerfile
     command: uvicorn app.services.auth.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8001:8000"
     environment:
       <<: *db-env
       DB_USER: auth_user
@@ -83,6 +71,8 @@ services:
   product:
     <<: *app-image
     command: uvicorn app.services.product.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8002:8000"
     environment:
       <<: *db-env
       DB_USER: product_user
@@ -95,6 +85,8 @@ services:
   order:
     <<: *app-image
     command: uvicorn app.services.order.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8003:8000"
     environment:
       <<: *db-env
       DB_USER: order_user
@@ -115,6 +107,8 @@ services:
   payment:
     <<: *app-image
     command: uvicorn app.services.payment.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8004:8000"
     environment:
       <<: *db-env
       DB_USER: payment_user
@@ -127,6 +121,8 @@ services:
   notification:
     <<: *app-image
     command: uvicorn app.services.notification.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8005:8000"
     environment:
       <<: *db-env
       DB_USER: notification_user
@@ -148,8 +144,8 @@ services:
     ports:
       - "8888:80"
     volumes:
-      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./eks-frontend/index.html:/usr/share/nginx/html/index.html:ro
+      - ../gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../eks-frontend/index.html:/usr/share/nginx/html/index.html:ro
     depends_on:
       - auth
       - product

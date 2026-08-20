@@ -1,18 +1,18 @@
 """Product domain model (product_schema). Owned by the product service."""
 
 from datetime import datetime
-
-from sqlalchemy import DateTime, Integer, Numeric, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import ClassVar
 
 from app.shared.db import Base
+from sqlalchemy import DateTime, Integer, Numeric, String, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 SCHEMA = "product_schema"
 
 
 class Product(Base):
     __tablename__ = "products"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__: ClassVar[dict[str, str]] = {"schema": SCHEMA}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)

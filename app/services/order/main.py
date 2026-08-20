@@ -3,11 +3,10 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-
-from app.shared.db import init_models
 from app.services.order import models  # noqa: F401 - register tables on Base
 from app.services.order.routes import router
+from app.shared.db import init_models
+from fastapi import FastAPI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("order")

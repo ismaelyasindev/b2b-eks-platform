@@ -8,11 +8,10 @@ preserving the distributed state boundary.
 from decimal import Decimal
 
 import jwt
+from app.shared.config import settings
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel, EmailStr
-
-from app.shared.config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token", auto_error=True)
 

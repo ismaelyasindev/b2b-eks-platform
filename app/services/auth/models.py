@@ -1,18 +1,18 @@
 """Auth domain models (auth_schema). Owned exclusively by the auth service."""
 
 from datetime import datetime
-
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import ClassVar
 
 from app.shared.db import Base
+from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 SCHEMA = "auth_schema"
 
 
 class Tenant(Base):
     __tablename__ = "tenants"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__: ClassVar[dict[str, str]] = {"schema": SCHEMA}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
@@ -24,7 +24,7 @@ class Tenant(Base):
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__: ClassVar[dict[str, str]] = {"schema": SCHEMA}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)

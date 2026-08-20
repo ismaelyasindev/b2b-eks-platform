@@ -4,12 +4,11 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-
-from app.shared.db import init_models
 from app.services.notification import models  # noqa: F401 - register tables on Base
 from app.services.notification.consumer import consume_forever
 from app.services.notification.routes import router
+from app.shared.db import init_models
+from fastapi import FastAPI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("notification")

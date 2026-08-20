@@ -1,18 +1,18 @@
 """Payment domain model (payment_schema). Owned by the payment service."""
 
 from datetime import datetime
-
-from sqlalchemy import DateTime, Integer, Numeric, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import ClassVar
 
 from app.shared.db import Base
+from sqlalchemy import DateTime, Integer, Numeric, String, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 SCHEMA = "payment_schema"
 
 
 class Payment(Base):
     __tablename__ = "transactions"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__: ClassVar[dict[str, str]] = {"schema": SCHEMA}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     order_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)

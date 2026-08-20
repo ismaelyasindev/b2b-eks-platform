@@ -24,7 +24,6 @@ import time
 from collections import deque
 
 import boto3
-
 from app.shared.config import settings
 
 logger = logging.getLogger("auth.throttle")

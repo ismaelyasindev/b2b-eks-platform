@@ -2,14 +2,13 @@
 
 from decimal import Decimal
 
+from app.services.product.models import Product
+from app.shared.db import get_db
+from app.shared.schemas import StockCheckRequest, StockCheckResponse, StockLine
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.shared.db import get_db
-from app.shared.schemas import StockCheckRequest, StockCheckResponse, StockLine
-from app.services.product.models import Product
 
 router = APIRouter()
 

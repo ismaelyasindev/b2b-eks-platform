@@ -7,11 +7,11 @@ boundary is enforced at the role/grant layer and crossed only via HTTP/SQS.
 
 from datetime import datetime
 from enum import Enum
-
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import ClassVar
 
 from app.shared.db import Base
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 SCHEMA = "order_schema"
 
@@ -24,7 +24,7 @@ class OrderStatus(str, Enum):
 
 class Order(Base):
     __tablename__ = "orders"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__: ClassVar[dict[str, str]] = {"schema": SCHEMA}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     tenant_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
@@ -40,7 +40,7 @@ class Order(Base):
 
 class OrderItem(Base):
     __tablename__ = "order_items"
-    __table_args__ = {"schema": SCHEMA}
+    __table_args__: ClassVar[dict[str, str]] = {"schema": SCHEMA}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     order_id: Mapped[int] = mapped_column(

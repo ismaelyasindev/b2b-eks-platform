@@ -5,13 +5,12 @@ import random
 import uuid
 from decimal import Decimal
 
+from app.services.payment.models import Payment
+from app.shared.db import get_db
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.shared.db import get_db
-from app.services.payment.models import Payment
 
 router = APIRouter()
 
