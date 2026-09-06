@@ -1,0 +1,6 @@
+cluster_name         = "b2b-eks-platform"
+cluster_version      = "1.33"
+region               = "eu-west-2"
+deploy_nat_gateway   = true
+node_count           = 1
+api_origin_domain    = ""
