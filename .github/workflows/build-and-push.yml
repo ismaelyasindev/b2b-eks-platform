@@ -1,0 +1,108 @@
+name: "01 - Test, Build & Push Microservices"
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "app/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+env:
+  AWS_REGION: "eu-west-2"
+  AWS_ROLE_ARN: "arn:aws:iam::206868134740:role/github-actions-ecr-push-role"
+
+jobs:
+  shift-left-testing:
+    name: "Native Runner Lint & Test"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: "Install test dependencies"
+        run: pip install -r requirements-dev.txt
+        working-directory: ./app
+      - name: "Ruff"
+        run: ruff check .
+        working-directory: ./app
+      - name: "Pytest"
+        run: pytest
+        working-directory: ./app
+
+  build-matrix:
+    name: "Build & Push ${{ matrix.service }}"
+    needs: shift-left-testing
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [auth, product, order, payment, notification]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Build image"
+        working-directory: ./app
+        run: |
+          docker build \
+            -t b2b-${{ matrix.service }}:${{ github.sha }} .
+
+      - name: "Trivy scan"
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "b2b-${{ matrix.service }}:${{ github.sha }}"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "HIGH,CRITICAL"
+
+      - name: "Configure AWS via OIDC"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: "Login to ECR"
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: "Push to ECR"
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: |
+          docker tag b2b-${{ matrix.service }}:${{ github.sha }} "$REGISTRY/b2b-${{ matrix.service }}:dev-${{ github.sha }}"
+          docker tag b2b-${{ matrix.service }}:${{ github.sha }} "$REGISTRY/b2b-${{ matrix.service }}:latest"
+          docker push "$REGISTRY/b2b-${{ matrix.service }}:dev-${{ github.sha }}"
+          docker push "$REGISTRY/b2b-${{ matrix.service }}:latest"
+
+  promote-to-dev:
+    name: "Bump values-dev.yaml"
+    needs: build-matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Install yq"
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: "Update image.tag in values-dev.yaml"
+        run: yq -i '.image.tag = "dev-${{ github.sha }}"' kubernetes/helm/b2b-app/values-dev.yaml
+
+      - name: "Open auto-merge PR"
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "ci(dev): deploy dev-${{ github.sha }}"
+          branch: "ci/deploy-dev-${{ github.sha }}"
+          title: "ci(dev): deploy dev-${{ github.sha }}"
+          body: "Automated dev image bump. Prod is unaffected."
+          labels: "automated,dev-deploy"

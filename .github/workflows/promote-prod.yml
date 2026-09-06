@@ -1,0 +1,74 @@
+name: "01b - Promote image to Production"
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Git SHA already validated in dev (the part after 'dev-')"
+        required: true
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+env:
+  AWS_REGION: "eu-west-2"
+  AWS_ROLE_ARN: "arn:aws:iam::206868134740:role/github-actions-ecr-push-role"
+
+jobs:
+  retag:
+    name: "Re-tag ${{ matrix.service }} dev -> prod"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [auth, product, order, payment, notification]
+    steps:
+      - name: "Configure AWS via OIDC"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: "Promote exact image digest"
+        run: |
+          set -euo pipefail
+          REPO="b2b-${{ matrix.service }}"
+          SRC_TAG="dev-${{ inputs.sha }}"
+          DST_TAG="prod-${{ inputs.sha }}"
+          MANIFEST=$(aws ecr batch-get-image \
+            --repository-name "$REPO" \
+            --image-ids imageTag="$SRC_TAG" \
+            --query 'images[0].imageManifest' --output text)
+          if [ -z "$MANIFEST" ] || [ "$MANIFEST" = "None" ]; then
+            echo "::error::$REPO:$SRC_TAG not found in ECR"
+            exit 1
+          fi
+          aws ecr put-image \
+            --repository-name "$REPO" \
+            --image-tag "$DST_TAG" \
+            --image-manifest "$MANIFEST"
+
+  bump-prod-values:
+    name: "Bump values-prod.yaml"
+    needs: retag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Install yq"
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: "Update image.tag in values-prod.yaml"
+        run: yq -i '.image.tag = "prod-${{ inputs.sha }}"' kubernetes/helm/b2b-app/values-prod.yaml
+
+      - name: "Open promotion PR"
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "release(prod): promote ${{ inputs.sha }}"
+          branch: "release/prod-${{ inputs.sha }}"
+          title: "release(prod): promote ${{ inputs.sha }}"
+          body: "Promotes the same image digest already tagged in ECR as prod-${{ inputs.sha }}. Requires review."
+          labels: "release,prod-deploy"

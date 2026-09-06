@@ -1,0 +1,41 @@
+name: "03 - Infrastructure Apply"
+
+on:
+  workflow_dispatch:
+    inputs:
+      working_dir:
+        description: "Terraform directory to apply"
+        required: true
+        type: choice
+        options:
+          - terraform/persistent
+          - terraform/cluster
+        default: terraform/persistent
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: "eu-west-2"
+  AWS_ROLE_ARN: "arn:aws:iam::206868134740:role/github-actions-tf-apply-role"
+
+jobs:
+  infrastructure-apply:
+    name: "Apply ${{ inputs.working_dir }}"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.0"
+      - name: "Configure AWS via OIDC"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: "Apply"
+        run: |
+          terraform init
+          terraform apply -auto-approve -input=false
+        working-directory: ${{ inputs.working_dir }}

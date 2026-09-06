@@ -1,0 +1,72 @@
+name: "02 - Infrastructure Lint & Plan"
+
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "terraform/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: "eu-west-2"
+  AWS_ROLE_ARN: "arn:aws:iam::206868134740:role/github-actions-tf-plan-role"
+  TF_WORKING_DIR: "terraform/persistent"
+
+jobs:
+  validate-and-plan:
+    name: "Fmt, lint, Checkov & plan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.0"
+
+      - name: "Enforce formatting"
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+
+      - name: "Init (no backend) for validate"
+        run: terraform init -backend=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: "Validate"
+        run: terraform validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: "Setup TFLint"
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "TFLint"
+        run: |
+          tflint --init
+          tflint -f compact
+        working-directory: ${{ env.TF_WORKING_DIR }}
+
+      - name: "Checkov"
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          framework: terraform
+          output_format: cli
+          soft_fail: false
+          config_file: .checkov.yaml
+
+      - name: "Configure AWS via OIDC"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: "Plan"
+        run: |
+          terraform init -reconfigure
+          terraform plan -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}
