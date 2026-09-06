@@ -1,0 +1,6 @@
+apiVersion: v2
+name: b2b-app
+description: One chart for all five B2B services
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

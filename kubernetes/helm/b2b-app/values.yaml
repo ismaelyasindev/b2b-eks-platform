@@ -1,0 +1,15 @@
+image:
+  registry: "206868134740.dkr.ecr.eu-west-2.amazonaws.com"
+replicaCount: 2
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+dbCredentialsSource: "secretsmanager"
+otelEndpoint: "http://otel-collector.monitoring.svc.cluster.local:4317"
+authPool:
+  size: 5
+  maxOverflow: 10

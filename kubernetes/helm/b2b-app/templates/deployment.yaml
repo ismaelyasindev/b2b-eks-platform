@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.serviceName }}-service
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.serviceName }}
+    spec:
+      serviceAccountName: {{ .Values.serviceName }}-sa
+      containers:
+        - name: {{ .Values.serviceName }}
+          image: "{{ .Values.image.registry }}/b2b-{{ .Values.serviceName }}:{{ .Values.image.tag }}"
+          command: ["uvicorn"]
+          args:
+            - "app.services.{{ .Values.serviceName }}.main:app"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "8000"
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_SCHEMA
+              value: {{ .Values.dbSchema }}
+            - name: DB_CREDENTIALS_SOURCE
+              value: {{ .Values.dbCredentialsSource | quote }}
+            - name: DB_SECRET_ID
+              value: "{{ .Values.dbSecretNamePrefix }}/{{ .Values.serviceName }}/db"
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.serviceName }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.otelEndpoint | quote }}
+            {{- if eq .Values.serviceName "order" }}
+            - name: PRODUCT_SERVICE_URL
+              value: "http://product-svc.{{ .Values.namespace }}.svc.cluster.local"
+            {{- end }}
+            {{- if eq .Values.serviceName "auth" }}
+            - name: DB_POOL_SIZE
+              value: "{{ .Values.authPool.size }}"
+            - name: DB_MAX_OVERFLOW
+              value: "{{ .Values.authPool.maxOverflow }}"
+            {{- end }}
+          resources:
+            requests:
+              cpu: {{ .Values.resources.requests.cpu | quote }}
+              memory: {{ .Values.resources.requests.memory | quote }}
+            limits:
+              cpu: {{ .Values.resources.limits.cpu | quote }}
+              memory: {{ .Values.resources.limits.memory | quote }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5

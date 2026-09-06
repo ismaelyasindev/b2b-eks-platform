@@ -1,0 +1,8 @@
+image:
+  tag: placeholder
+replicaCount: 2
+authPool:
+  size: 20
+  maxOverflow: 30
+wafWebAclArn: ""
+dbSecretNamePrefix: "b2b/prod"

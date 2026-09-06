@@ -1,0 +1,5 @@
+image:
+  tag: placeholder
+replicaCount: 1
+wafWebAclArn: ""
+dbSecretNamePrefix: "b2b/dev"

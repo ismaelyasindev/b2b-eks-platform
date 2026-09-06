@@ -1,0 +1,13 @@
+{{- if eq .Values.environment "development" }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ .Values.serviceName }}-dev-quota
+  namespace: {{ .Values.namespace }}
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 4Gi
+    limits.cpu: "4"
+    limits.memory: 8Gi
+{{- end }}
