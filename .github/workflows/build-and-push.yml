@@ -52,7 +52,7 @@ jobs:
             -t b2b-${{ matrix.service }}:${{ github.sha }} .
 
       - name: "Trivy scan"
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           image-ref: "b2b-${{ matrix.service }}:${{ github.sha }}"
           format: "table"
