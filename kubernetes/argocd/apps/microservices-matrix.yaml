@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: b2b-microservices-matrix
+  namespace: argocd
+spec:
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - namespace: dev
+                  envLabel: "development"
+                - namespace: prod
+                  envLabel: "production"
+          - list:
+              elements:
+                - { service: auth, schema: auth_schema }
+                - { service: product, schema: product_schema }
+                - { service: order, schema: order_schema }
+                - { service: payment, schema: payment_schema }
+                - { service: notification, schema: notification_schema }
+  template:
+    metadata:
+      name: '{{.namespace}}-{{.service}}-service'
+    spec:
+      project: default
+      source:
+        repoURL: 'https://github.com/ismaelyasindev/b2b-eks-platform.git'
+        targetRevision: main
+        path: kubernetes/helm/b2b-app
+        helm:
+          valueFiles:
+            - values.yaml
+            - 'values-{{.namespace}}.yaml'
+          parameters:
+            - { name: serviceName, value: '{{.service}}' }
+            - { name: dbSchema, value: '{{.schema}}' }
+            - { name: namespace, value: '{{.namespace}}' }
+            - { name: environment, value: '{{.envLabel}}' }
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.namespace}}'
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/replicas
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

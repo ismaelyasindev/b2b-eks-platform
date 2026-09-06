@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: postgres-exporter
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: prometheus-postgres-exporter
+    targetRevision: "8.2.0"
+    helm:
+      values: |
+        config:
+          datasourceSecret:
+            name: postgres-exporter-dsn
+            key: DATA_SOURCE_NAME
+          extraArgs:
+            - --extend.query-path=/etc/postgres_exporter/queries.yaml
+        extraVolumes:
+          - name: queries
+            configMap:
+              name: postgres-exporter-queries
+        extraVolumeMounts:
+          - name: queries
+            mountPath: /etc/postgres_exporter
+            readOnly: true
+        extraManifests:
+          - apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: postgres-exporter-queries
+            data:
+              queries.yaml: |
+                pg_stat_activity:
+                  query: "SELECT state, count(*) AS count FROM pg_stat_activity GROUP BY state"
+                  metrics:
+                    - state:
+                        usage: "LABEL"
+                    - count:
+                        usage: "GAUGE"
+                        description: "Connections grouped by backend state"
+        serviceMonitor:
+          enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

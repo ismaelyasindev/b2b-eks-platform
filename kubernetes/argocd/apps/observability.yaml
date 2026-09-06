@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: "88.6.2"
+    helm:
+      values: |
+        alertmanager:
+          serviceAccount:
+            create: true
+            name: alertmanager
+          config:
+            route:
+              receiver: aiops-sns
+            receivers:
+              - name: aiops-sns
+                sns_configs:
+                  - topic_arn: arn:aws:sns:eu-west-2:206868134740:aiops-alerts
+                    sigv4:
+                      region: eu-west-2
+                    subject: '{{ "{{ .CommonLabels.alertname }}" }}'
+                    send_resolved: true
+        prometheus:
+          prometheusSpec:
+            serviceMonitorSelectorNilUsesHelmValues: false
+            nodeSelector:
+              topology.kubernetes.io/zone: eu-west-2a
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: gp3
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 20Gi
+        additionalPrometheusRulesMap:
+          aiops:
+            groups:
+              - name: aiops
+                rules:
+                  - alert: RDSConnectionStorm
+                    expr: sum(pg_stat_activity_count{state="active"}) > 50
+                    for: 30s
+                    labels:
+                      severity: critical
+                    annotations:
+                      summary: "RDS connection storm — {{ "{{ $value }}" }} active connections"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

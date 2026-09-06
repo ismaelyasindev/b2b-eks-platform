@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loadtest
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/ismaelyasindev/b2b-eks-platform.git'
+    targetRevision: main
+    path: load-tests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
