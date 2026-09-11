@@ -155,6 +155,12 @@ resource "aws_eks_addon" "vpc_cni" {
   depends_on = [aws_eks_cluster.main]
 }
 
+resource "aws_ec2_tag" "cluster_sg_karpenter" {
+  resource_id = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+  key         = "karpenter.sh/discovery"
+  value       = var.cluster_name
+}
+
 output "cluster_name" {
   value = aws_eks_cluster.main.name
 }
