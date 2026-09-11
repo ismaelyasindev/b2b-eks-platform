@@ -19,6 +19,7 @@ spec:
             route:
               receiver: aiops-sns
             receivers:
+              - name: "null"
               - name: aiops-sns
                 sns_configs:
                   - topic_arn: arn:aws:sns:eu-west-2:206868134740:aiops-alerts
