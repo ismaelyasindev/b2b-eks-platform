@@ -45,7 +45,7 @@ spec:
               - name: aiops
                 rules:
                   - alert: RDSConnectionStorm
-                    expr: sum(pg_stat_activity_count{state="active"}) > 50
+                    expr: 'sum(pg_stat_activity_count{state="active"}) > 50'
                     for: 30s
                     labels:
                       severity: critical
