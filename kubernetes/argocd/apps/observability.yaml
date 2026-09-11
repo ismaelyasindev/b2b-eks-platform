@@ -50,7 +50,7 @@ spec:
                     labels:
                       severity: critical
                     annotations:
-                      summary: "RDS connection storm — {{ "{{ $value }}" }} active connections"
+                      summary: 'RDS connection storm - {{ "{{ $value }}" }} active connections'
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
