@@ -7,7 +7,9 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/group.name: "b2b-platform-{{ .Values.namespace }}"
-    alb.ingress.kubernetes.io/wafv2-acl-arn: {{ .Values.wafWebAclArn }}
+    {{- if .Values.wafWebAclArn }}
+    alb.ingress.kubernetes.io/wafv2-acl-arn: {{ .Values.wafWebAclArn | quote }}
+    {{- end }}
 spec:
   ingressClassName: alb
   rules:

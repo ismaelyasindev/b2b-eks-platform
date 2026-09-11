@@ -1,5 +1,5 @@
 image:
   tag: dev-e2411437349352e702a5ed9fcf2a256e409b6c4d
 replicaCount: 1
-wafWebAclArn: ""
+wafWebAclArn: "arn:aws:wafv2:eu-west-2:206868134740:regional/webacl/b2b-edge-firewall/10fdf47b-5866-48e5-80d5-6474f2cda9ee"
 dbSecretNamePrefix: "b2b/dev"

@@ -4,5 +4,5 @@ replicaCount: 2
 authPool:
   size: 20
   maxOverflow: 30
-wafWebAclArn: ""
+wafWebAclArn: "arn:aws:wafv2:eu-west-2:206868134740:regional/webacl/b2b-edge-firewall/10fdf47b-5866-48e5-80d5-6474f2cda9ee"
 dbSecretNamePrefix: "b2b/prod"
