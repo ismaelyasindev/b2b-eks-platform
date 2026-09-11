@@ -15,31 +15,6 @@ spec:
           datasourceSecret:
             name: postgres-exporter-dsn
             key: DATA_SOURCE_NAME
-          extraArgs:
-            - --extend.query-path=/etc/postgres_exporter/queries.yaml
-        extraVolumes:
-          - name: queries
-            configMap:
-              name: postgres-exporter-queries
-        extraVolumeMounts:
-          - name: queries
-            mountPath: /etc/postgres_exporter
-            readOnly: true
-        extraManifests:
-          - apiVersion: v1
-            kind: ConfigMap
-            metadata:
-              name: postgres-exporter-queries
-            data:
-              queries.yaml: |
-                pg_stat_activity:
-                  query: "SELECT state, count(*) AS count FROM pg_stat_activity GROUP BY state"
-                  metrics:
-                    - state:
-                        usage: "LABEL"
-                    - count:
-                        usage: "GAUGE"
-                        description: "Connections grouped by backend state"
         serviceMonitor:
           enabled: true
   destination:
