@@ -6,7 +6,7 @@ variable "name" {
 resource "aws_wafv2_web_acl" "edge_firewall" {
   name        = var.name
   scope       = "REGIONAL"
-  description = "Edge rate limiting; associated to the ALB via Ingress annotation"
+  description = "Edge rate limiting for the ALB Ingress"
 
   default_action {
     allow {}

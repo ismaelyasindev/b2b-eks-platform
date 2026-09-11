@@ -70,7 +70,7 @@ module "karpenter" {
   node_role_arn    = module.eks.node_role_arn
   node_role_name   = module.eks.node_role_name
 
-  depends_on = [module.eks]
+  depends_on = [module.eks, module.bootstrap]
 }
 
 module "bootstrap" {

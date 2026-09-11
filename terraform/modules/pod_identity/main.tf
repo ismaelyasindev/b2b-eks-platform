@@ -54,6 +54,13 @@ data "aws_iam_policy_document" "order_sqs" {
     actions   = ["sqs:SendMessage"]
     resources = [var.sqs_queue_arn]
   }
+
+  statement {
+    actions = ["secretsmanager:GetSecretValue"]
+    resources = [
+      for k, v in var.service_env : var.db_secret_arns[k] if v.svc == "order"
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "order_sqs" {
@@ -86,6 +93,13 @@ data "aws_iam_policy_document" "notification_sqs" {
     ]
     resources = [var.sqs_queue_arn, var.sqs_dlq_arn]
   }
+
+  statement {
+    actions = ["secretsmanager:GetSecretValue"]
+    resources = [
+      for k, v in var.service_env : var.db_secret_arns[k] if v.svc == "notification"
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "notification_sqs" {
@@ -103,15 +117,21 @@ resource "aws_eks_pod_identity_association" "notification_sqs" {
   role_arn        = aws_iam_role.notification_sqs.arn
 }
 
+locals {
+  db_secret_only = {
+    for k, v in var.service_env : k => v if !contains(["order", "notification"], v.svc)
+  }
+}
+
 resource "aws_iam_role" "db_secret" {
-  for_each = var.service_env
+  for_each = local.db_secret_only
 
   name               = "${var.cluster_name}-${each.key}-db"
   assume_role_policy = data.aws_iam_policy_document.pod_assume.json
 }
 
 data "aws_iam_policy_document" "db_secret" {
-  for_each = var.service_env
+  for_each = local.db_secret_only
 
   statement {
     actions   = ["secretsmanager:GetSecretValue"]
@@ -128,7 +148,7 @@ data "aws_iam_policy_document" "db_secret" {
 }
 
 resource "aws_iam_role_policy" "db_secret" {
-  for_each = var.service_env
+  for_each = local.db_secret_only
 
   name   = "db-secret"
   role   = aws_iam_role.db_secret[each.key].id
@@ -136,7 +156,7 @@ resource "aws_iam_role_policy" "db_secret" {
 }
 
 resource "aws_eks_pod_identity_association" "db_secret" {
-  for_each = var.service_env
+  for_each = local.db_secret_only
 
   cluster_name    = var.cluster_name
   namespace       = each.value.env
