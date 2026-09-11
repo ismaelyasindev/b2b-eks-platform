@@ -4,6 +4,9 @@ metadata:
   name: b2b-microservices-matrix
   namespace: argocd
 spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
   generators:
     - matrix:
         generators:
