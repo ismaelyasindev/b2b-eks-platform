@@ -47,7 +47,11 @@ Most “hello world on EKS” repos stop at a Deployment and a LoadBalancer. Thi
 > Modelled on the “Online Boutique” shape (one cluster, many services) — Python/FastAPI, one Postgres per env with schema isolation, GitOps, and a chaos demo you can screenshot.
 
 <p align="center">
-  <em>Storefront: <a href="https://d2dx5pzn9z18zo.cloudfront.net">https://d2dx5pzn9z18zo.cloudfront.net</a></em>
+  <video src="docs/assets/09-storefront-demo.mov" width="720" controls muted playsinline>
+    Storefront demo — <a href="docs/assets/09-storefront-demo.mov">download the recording</a>
+  </video>
+  <br/>
+  <em>Storefront on CloudFront: <a href="https://d2dx5pzn9z18zo.cloudfront.net">https://d2dx5pzn9z18zo.cloudfront.net</a></em>
 </p>
 
 ---
