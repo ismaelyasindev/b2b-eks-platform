@@ -3,4 +3,4 @@ cluster_version      = "1.33"
 region               = "eu-west-2"
 deploy_nat_gateway   = true
 node_count           = 1
-api_origin_domain    = ""
+api_origin_domain    = "k8s-b2bplatformprod-b799c3a98a-1823785693.eu-west-2.elb.amazonaws.com"

@@ -15,7 +15,7 @@ env:
   AWS_REGION: "eu-west-2"
   AWS_ROLE_ARN: "arn:aws:iam::206868134740:role/github-actions-frontend-deploy-role"
   STOREFRONT_BUCKET: "b2b-platform-storefront-london"
-  CLOUDFRONT_DIST_ID: ""
+  CLOUDFRONT_DIST_ID: "E3EFV3L0GWG13Z"
 
 jobs:
   deploy-frontend:

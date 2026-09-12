@@ -83,9 +83,17 @@ data "aws_iam_policy_document" "remediation" {
       "bedrock:InvokeModelWithResponseStream",
     ]
     resources = [
-      "arn:aws:bedrock:eu-west-2::foundation-model/${local.bedrock_model_id}",
+      "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
       "arn:aws:bedrock:eu-west-2:${data.aws_caller_identity.current.account_id}:inference-profile/*",
     ]
+  }
+
+  statement {
+    actions = [
+      "aws-marketplace:ViewSubscriptions",
+      "aws-marketplace:Subscribe",
+    ]
+    resources = ["*"]
   }
 }
 
