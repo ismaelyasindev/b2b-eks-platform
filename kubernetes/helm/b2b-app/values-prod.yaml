@@ -1,5 +1,5 @@
 image:
-  tag: dev-e2411437349352e702a5ed9fcf2a256e409b6c4d
+  tag: prod-d15fea709d248d85b7945432b419e5d6df6bc4c5
 replicaCount: 2
 authPool:
   size: 20
