@@ -2,7 +2,8 @@ FROM public.ecr.aws/docker/library/python:3.11-slim
 
 WORKDIR /workspace
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
     gcc libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
