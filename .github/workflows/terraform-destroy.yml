@@ -19,6 +19,7 @@ permissions:
 env:
   AWS_REGION: "eu-west-2"
   AWS_ROLE_ARN: "arn:aws:iam::206868134740:role/github-actions-tf-destroy-role"
+  TF_VAR_aiops_notify_email: ${{ vars.AIOPS_NOTIFY_EMAIL }}
 
 jobs:
   infrastructure-destroy:
