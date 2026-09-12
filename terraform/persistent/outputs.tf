@@ -36,6 +36,10 @@ output "throttle_table_name" {
   value = aws_dynamodb_table.throttle_config.name
 }
 
+output "aiops_approval_url" {
+  value = aws_lambda_function_url.approval.function_url
+}
+
 output "github_actions_role_arns" {
   value = {
     for name, role in aws_iam_role.github_actions : name => role.arn

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=28&pause=1200&color=E0218A&center=true&vCenter=true&width=820&lines=B2B+EKS+Platform;GitOps+%2B+OIDC+on+AWS;Argo+CD+%C2%B7+AIOps+%C2%B7+CloudFront" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=28&pause=1200&color=2563EB&center=true&vCenter=true&width=820&lines=B2B+EKS+Platform;GitOps+%2B+OIDC+on+AWS;Argo+CD+%C2%B7+AIOps+%C2%B7+CloudFront" alt="Typing SVG" />
 </p>
 
 <h1 align="center">B2B EKS Platform — Microservices on Amazon EKS</h1>
@@ -7,14 +7,14 @@
 <p align="center">
   <strong>Five FastAPI services on one EKS cluster</strong> — Terraform (persistent + cluster), Argo CD GitOps,
   GitHub Actions OIDC into ECR, ALB + WAF at the edge, CloudFront storefront, and an AIOps loop
-  (Locust → Prometheus → SNS → Lambda / Bedrock → DynamoDB → auth 429).<br/>
+  (Locust → Prometheus → SNS → Lambda / Bedrock → SES approval → DynamoDB → auth 429).<br/>
   <em>Live in <code>eu-west-2</code>. Destroy the cluster stack when the demo window ends; persistent (ECR, OIDC, AIOps, storefront bucket) stays.</em>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Status-Live%20%7C%20eu--west--2-059669?style=for-the-badge" alt="Status" />
   <a href="https://github.com/ismaelyasindev/b2b-eks-platform/actions"><img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="Actions" /></a>
-  <a href="https://d2dx5pzn9z18zo.cloudfront.net"><img src="https://img.shields.io/badge/Storefront-CloudFront-E0218A?style=for-the-badge" alt="Storefront" /></a>
+  <a href="https://d2dx5pzn9z18zo.cloudfront.net"><img src="https://img.shields.io/badge/Storefront-CloudFront-2563EB?style=for-the-badge" alt="Storefront" /></a>
 </p>
 
 <p align="center">
@@ -42,7 +42,7 @@ Most “hello world on EKS” repos stop at a Deployment and a LoadBalancer. Thi
 - Images ship with **GitHub OIDC → ECR** (no long-lived AWS keys); Argo CD syncs Helm to `dev` / `prod`
 - Edge is **ALB (path prefixes) + regional WAF**; storefront is **S3 + CloudFront** (OAC, `/api` strip)
 - Observability is **kube-prometheus-stack + postgres-exporter**
-- AIOps is a **closed loop**: connection storm → alert → SNS → Lambda / Haiku → DynamoDB TTL → **HTTP 429** on `/auth/signup`
+- AIOps is a **closed loop with a human gate**: storm → alert → SNS → Bedrock → SES Approve/Decline → DynamoDB TTL → **HTTP 429** on `/auth/signup`
 
 > Modelled on the “Online Boutique” shape (one cluster, many services) — Python/FastAPI, one Postgres per env with schema isolation, GitOps, and a chaos demo you can screenshot.
 
@@ -53,7 +53,7 @@ Most “hello world on EKS” repos stop at a Deployment and a LoadBalancer. Thi
 Storefront on **CloudFront** (S3 origin + `/api/*` to the prod ALB). Same shop a recruiter opens in the browser.
 
 <p align="center">
-  <a href="https://d2dx5pzn9z18zo.cloudfront.net"><img src="https://img.shields.io/badge/Live%20storefront-d2dx5pzn9z18zo.cloudfront.net-E0218A?style=for-the-badge" alt="Live storefront" /></a>
+  <a href="https://d2dx5pzn9z18zo.cloudfront.net"><img src="https://img.shields.io/badge/Live%20storefront-d2dx5pzn9z18zo.cloudfront.net-2563EB?style=for-the-badge" alt="Live storefront" /></a>
 </p>
 
 <p align="center">
@@ -110,7 +110,7 @@ Storefront on **CloudFront** (S3 origin + `/api/*` to the prod ALB). Same shop a
 ### Observability & AIOps
 - Grafana / Prometheus; `pg_stat_activity_count`
 - Alert `RDSConnectionStorm` → SNS `aiops-alerts`
-- Lambda + **Bedrock Haiku 4.5** (EU inference profile) → DynamoDB throttle flag
+- Lambda + **Bedrock Haiku 4.5** → SES Approve/Decline → DynamoDB throttle flag
 
 </td>
 </tr>
@@ -118,50 +118,131 @@ Storefront on **CloudFront** (S3 origin + `/api/*` to the prod ALB). Same shop a
 
 ---
 
-## AIOps loop (proven)
+## AIOps
 
-In-cluster Locust hits `auth-svc.prod` with `X-Trigger-Storm` so signup holds DB connections. Prometheus fires when `sum(pg_stat_activity_count{state="active"}) > 50` for 30s. Alertmanager publishes to SNS; Lambda reads the S3 runbook, calls Bedrock, writes `AI_EMERGENCY_SIGNUP_THROTTLE` (TTL). Auth pods poll DynamoDB and return **429** before Postgres.
+This is the platform story: **detect → decide → ask a human → remediate → self-heal**.  
+The full-platform architecture diagram comes later. This section is **only** the control loop.
 
-WAF stays **Normal** on purpose — Locust never goes through the ALB.
+Locust hits `auth-svc.prod` in-cluster (`X-Trigger-Storm`) so signup holds Postgres connections. WAF stays **Normal** — the Job never goes through the ALB. Prometheus evaluates:
 
-<p align="center"><strong>1 — Grafana baseline</strong></p>
+```promql
+sum(pg_stat_activity_count{state="active"}) > 50
+```
+
+After **30s** the alert `RDSConnectionStorm` is **Firing**. Alertmanager publishes to SNS `aiops-alerts`. Lambda `b2b-aiops-remediation` reads the S3 runbook and asks Bedrock Haiku 4.5 for one word: **THROTTLE** or **IGNORE**. On THROTTLE it **emails** Approve / Decline (HMAC-signed Function URL). DynamoDB is empty until a human clicks **Approve**. Auth pods poll every 10s and enforce **5 req/min/pod**; extra signups return **429**. The item has a 10-minute TTL, so the throttle lifts itself.
+
+### Architecture
+
+```mermaid
+flowchart TB
+  subgraph trigger ["1 — Trigger"]
+    Locust["Locust Job<br/>60 users / 10 min"]
+    Auth["auth-svc<br/>POST /auth/signup"]
+    RDS[("RDS Postgres")]
+    Locust --> Auth --> RDS
+  end
+
+  subgraph detect ["2 — Detect"]
+    Exp["postgres-exporter"]
+    Prom["Prometheus<br/>RDSConnectionStorm"]
+    RDS --> Exp --> Prom
+  end
+
+  subgraph dispatch ["3 — Dispatch"]
+    AM["Alertmanager"]
+    SNS["SNS aiops-alerts"]
+    Prom --> AM --> SNS
+  end
+
+  subgraph decide ["4 — Decide"]
+    Rem["Lambda b2b-aiops-remediation"]
+    RB["S3 runbook"]
+    Bedrock["Bedrock Haiku 4.5<br/>THROTTLE or IGNORE"]
+    SNS --> Rem
+    Rem --> RB
+    Rem --> Bedrock
+  end
+
+  subgraph gate ["5 — Human gate"]
+    SES["SES email"]
+    Human["Approve / Decline"]
+    Click["Lambda b2b-aiops-approval<br/>Function URL + HMAC"]
+    Bedrock -->|THROTTLE| SES --> Human --> Click
+  end
+
+  subgraph enforce ["6 — Enforce and self-heal"]
+    DDB[("DynamoDB<br/>ai-throttle-config TTL")]
+    Poll["Auth poller 10s"]
+    R429["HTTP 429"]
+    Click -->|Approve| DDB --> Poll --> R429
+  end
+```
+
+| Hop | Who acts | What a recruiter should see |
+|-----|----------|-----------------------------|
+| Trigger | Locust → auth → RDS | Connections climb (Grafana) |
+| Detect | Prometheus | `RDSConnectionStorm` **Firing** after 30s over 50 |
+| Dispatch | Alertmanager → SNS | Topic `aiops-alerts` + inbox AWS Notification |
+| Decide | Remediation Lambda + Bedrock | `THROTTLE` — **no** DynamoDB write yet |
+| Gate | SES + approval Lambda | Mail with signed links → Approve HTML |
+| Enforce | Auth poller | Item present → **429** after 5 req/min/pod |
+| Heal | DynamoDB TTL | Flag expires → signup opens again |
+
+### Evidence — trigger to remediation
+
+<p align="center"><strong>1 — Baseline before the storm</strong></p>
 <p align="center">
   <img src="docs/assets/01-grafana-baseline.png" alt="Grafana baseline active connections" width="900" />
 </p>
 
-<p align="center"><strong>2 — RDS connection storm</strong></p>
-<p align="center">
-  <img src="docs/assets/02-grafana-rds-storm.png" alt="Grafana RDSConnectionStorm firing" width="900" />
-</p>
-
-<p align="center"><strong>3 — Locust spike</strong></p>
+<p align="center"><strong>2 — Trigger: Locust holds signup connections</strong></p>
 <p align="center">
   <img src="docs/assets/03-grafana-locust-spike.png" alt="Grafana active connections spike under Locust" width="900" />
 </p>
 
-<p align="center"><strong>4 — DynamoDB emergency throttle</strong></p>
+<p align="center"><strong>3 — Detect: RDSConnectionStorm firing</strong></p>
 <p align="center">
-  <img src="docs/assets/04-dynamodb-throttle.jpg" alt="DynamoDB ai-throttle-config item" width="720" />
+  <img src="docs/assets/02-grafana-rds-storm.png" alt="Grafana RDSConnectionStorm firing" width="900" />
 </p>
 
-<p align="center"><strong>5 — Auth signup 429</strong></p>
-<p align="center">
-  <img src="docs/assets/05-auth-429.jpg" alt="HTTP 429 from /auth/signup" width="720" />
-</p>
-
-<p align="center"><strong>6 — SNS topic aiops-alerts</strong></p>
+<p align="center"><strong>4 — Dispatch: SNS topic aiops-alerts</strong></p>
 <p align="center">
   <img src="docs/assets/06-sns-topic.png" alt="SNS aiops-alerts topic" width="900" />
 </p>
 
-<p align="center"><strong>7 — Lambda monitoring</strong></p>
+<p align="center"><strong>5 — Decide: remediation Lambda</strong></p>
 <p align="center">
   <img src="docs/assets/07-lambda-dashboard.png" alt="Lambda b2b-aiops-remediation monitor" width="900" />
 </p>
 
-<p align="center"><strong>8 — Lambda logs (Bedrock + PutItem)</strong></p>
+<p align="center"><strong>6 — Decide: Lambda logs (runbook + Bedrock)</strong></p>
 <p align="center">
   <img src="docs/assets/08-lambda-logs.png" alt="Lambda CloudWatch logs" width="900" />
+</p>
+
+<p align="center"><strong>7 — Gate: SES approval email</strong></p>
+<p align="center">
+  <img src="docs/assets/10-approval-email.jpg" alt="SES AIOps approval email with Approve and Decline links" width="720" />
+</p>
+
+<p align="center"><strong>8 — Gate: human clicks Approve</strong></p>
+<p align="center">
+  <img src="docs/assets/11-approval-click.jpg" alt="Approval Function URL confirmation page" width="720" />
+</p>
+
+<p align="center"><strong>9 — Remediate: DynamoDB throttle flag</strong></p>
+<p align="center">
+  <img src="docs/assets/04-dynamodb-throttle.jpg" alt="DynamoDB ai-throttle-config item" width="720" />
+</p>
+
+<p align="center"><strong>10 — Enforce: auth signup 429</strong></p>
+<p align="center">
+  <img src="docs/assets/05-auth-429.jpg" alt="HTTP 429 from /auth/signup" width="720" />
+</p>
+
+<p align="center"><strong>11 — Self-heal: active connections drop after remediation</strong></p>
+<p align="center">
+  <img src="docs/assets/12-after-remediation.png" alt="Prometheus active connections falling to zero after throttle" width="900" />
 </p>
 
 ---
@@ -203,7 +284,7 @@ Secrets store **role ARNs** — never AWS access keys.
 ├── load-tests/            # Locust Job (manual Argo sync)
 ├── aiops/                 # Runbook + remediation Lambda
 ├── scripts/               # RDS role seed (optional)
-└── docs/assets/           # Storefront GIF + AIOps stills
+└── docs/assets/           # Storefront GIF + AIOps stills (trigger → 429)
 ```
 
 ---
@@ -248,7 +329,7 @@ aws s3 sync eks-frontend/ s3://b2b-platform-storefront-london/ --delete --region
 | No long-lived AWS keys in CI | **GitHub OIDC** assume-role |
 | App secrets | Secrets Manager + Pod Identity `GetSecretValue` |
 | Edge abuse | **WAF** on the ALB (Locust bypasses it by design) |
-| Storm stop | App-level 429 + DynamoDB **TTL** — no GitOps drift on WAF |
+| Storm stop | Human Approve → app-level 429 + DynamoDB **TTL** — no GitOps drift on WAF |
 | Image scan | Trivy in Actions before ECR push |
 
 ---
@@ -300,7 +381,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' -X POST \
 |-------|----------------------|
 | CloudFront `/` | Storefront HTML |
 | Catalog | `/api/product/list` via CloudFront → ALB `/product/list` |
-| AIOps (after storm + Lambda) | `/auth/signup` **429** while the DynamoDB TTL is valid |
+| AIOps (after storm + Approve) | `/auth/signup` **429** while the DynamoDB TTL is valid |
 | GitHub Actions | 01 / 02 / 05 green |
 
 ---
