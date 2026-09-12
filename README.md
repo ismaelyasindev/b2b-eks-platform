@@ -56,10 +56,10 @@ Storefront on **CloudFront** (S3 origin + `/api/*` to the prod ALB). Same shop a
   <a href="https://d2dx5pzn9z18zo.cloudfront.net"><img src="https://img.shields.io/badge/Live%20storefront-d2dx5pzn9z18zo.cloudfront.net-E0218A?style=for-the-badge" alt="Live storefront" /></a>
 </p>
 
-![Storefront demo](docs/assets/09-storefront-demo.mp4)
-
 <p align="center">
-  <em>If the player does not start, open <a href="docs/assets/09-storefront-demo.mp4">docs/assets/09-storefront-demo.mp4</a> on GitHub (browser-native MP4). The original QuickTime file is <a href="docs/assets/09-storefront-demo.mov">09-storefront-demo.mov</a>.</em>
+  <a href="https://d2dx5pzn9z18zo.cloudfront.net">
+    <img src="docs/assets/demo.gif" alt="Storefront demo on CloudFront" width="900" />
+  </a>
 </p>
 
 ---
@@ -203,7 +203,7 @@ Secrets store **role ARNs** — never AWS access keys.
 ├── load-tests/            # Locust Job (manual Argo sync)
 ├── aiops/                 # Runbook + remediation Lambda
 ├── scripts/               # RDS role seed (optional)
-└── docs/assets/           # README evidence stills
+└── docs/assets/           # Storefront GIF + AIOps stills
 ```
 
 ---
