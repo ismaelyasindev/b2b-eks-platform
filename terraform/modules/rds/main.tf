@@ -57,8 +57,8 @@ resource "aws_db_instance" "this" {
   storage_type          = "gp3"
   storage_encrypted     = true
 
-  db_name  = "b2b"
-  username = "postgres"
+  db_name                     = "b2b"
+  username                    = "postgres"
   manage_master_user_password = true
 
   db_subnet_group_name   = aws_db_subnet_group.this.name

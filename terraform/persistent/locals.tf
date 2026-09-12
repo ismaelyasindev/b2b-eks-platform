@@ -14,8 +14,8 @@ locals {
   bedrock_model_id        = "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
   github_oidc_thumbprints = ["6938fd4d98bab03faadb97b34396831e3780aea3", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"]
 
-  github_oidc_sub_legacy     = "repo:${local.github_repo}"
-  github_oidc_sub_immutable  = "repo:ismaelyasindev@${local.github_owner_id}/b2b-eks-platform@${local.github_repo_id}"
+  github_oidc_sub_legacy    = "repo:${local.github_repo}"
+  github_oidc_sub_immutable = "repo:ismaelyasindev@${local.github_owner_id}/b2b-eks-platform@${local.github_repo_id}"
 
   github_oidc_subs = {
     ecr-push = [
