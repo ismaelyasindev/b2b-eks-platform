@@ -46,12 +46,20 @@ Most “hello world on EKS” repos stop at a Deployment and a LoadBalancer. Thi
 
 > Modelled on the “Online Boutique” shape (one cluster, many services) — Python/FastAPI, one Postgres per env with schema isolation, GitOps, and a chaos demo you can screenshot.
 
+---
+
+## Demo
+
+Storefront on **CloudFront** (S3 origin + `/api/*` to the prod ALB). Same shop a recruiter opens in the browser.
+
 <p align="center">
-  <video src="docs/assets/09-storefront-demo.mov" width="720" controls muted playsinline>
-    Storefront demo — <a href="docs/assets/09-storefront-demo.mov">download the recording</a>
-  </video>
-  <br/>
-  <em>Storefront on CloudFront: <a href="https://d2dx5pzn9z18zo.cloudfront.net">https://d2dx5pzn9z18zo.cloudfront.net</a></em>
+  <a href="https://d2dx5pzn9z18zo.cloudfront.net"><img src="https://img.shields.io/badge/Live%20storefront-d2dx5pzn9z18zo.cloudfront.net-E0218A?style=for-the-badge" alt="Live storefront" /></a>
+</p>
+
+![Storefront demo](docs/assets/09-storefront-demo.mp4)
+
+<p align="center">
+  <em>If the player does not start, open <a href="docs/assets/09-storefront-demo.mp4">docs/assets/09-storefront-demo.mp4</a> on GitHub (browser-native MP4). The original QuickTime file is <a href="docs/assets/09-storefront-demo.mov">09-storefront-demo.mov</a>.</em>
 </p>
 
 ---
