@@ -38,5 +38,5 @@ jobs:
       - name: "Destroy"
         run: |
           terraform init
-          terraform destroy -auto-approve -input=false
+          terraform destroy -refresh=false -auto-approve -input=false
         working-directory: ${{ inputs.working_dir }}
