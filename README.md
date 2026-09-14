@@ -48,6 +48,14 @@ Most “hello world on EKS” repos stop at a Deployment and a LoadBalancer. Thi
 
 ---
 
+## Architecture
+
+<p align="center">
+  <img src="docs/assets/platform.png" alt="B2B EKS platform architecture" width="1000" />
+</p>
+
+---
+
 ## Demo
 
 Storefront on **CloudFront** (S3 origin + `/api/*` to the prod ALB). Same shop a recruiter opens in the browser.
@@ -121,7 +129,7 @@ Storefront on **CloudFront** (S3 origin + `/api/*` to the prod ALB). Same shop a
 ## AIOps
 
 This is the platform story: **detect → decide → ask a human → remediate → self-heal**.  
-The full-platform architecture diagram comes later. This section is **only** the control loop.
+The full-platform architecture is shown above; this section focuses **only** on the control loop.
 
 Locust hits `auth-svc.prod` in-cluster (`X-Trigger-Storm`) so signup holds Postgres connections. WAF stays **Normal** — the Job never goes through the ALB. Prometheus evaluates:
 
@@ -133,50 +141,9 @@ After **30s** the alert `RDSConnectionStorm` is **Firing**. Alertmanager publish
 
 ### Architecture
 
-```mermaid
-flowchart TB
-  subgraph trigger ["1 — Trigger"]
-    Locust["Locust Job<br/>60 users / 10 min"]
-    Auth["auth-svc<br/>POST /auth/signup"]
-    RDS[("RDS Postgres")]
-    Locust --> Auth --> RDS
-  end
-
-  subgraph detect ["2 — Detect"]
-    Exp["postgres-exporter"]
-    Prom["Prometheus<br/>RDSConnectionStorm"]
-    RDS --> Exp --> Prom
-  end
-
-  subgraph dispatch ["3 — Dispatch"]
-    AM["Alertmanager"]
-    SNS["SNS aiops-alerts"]
-    Prom --> AM --> SNS
-  end
-
-  subgraph decide ["4 — Decide"]
-    Rem["Lambda b2b-aiops-remediation"]
-    RB["S3 runbook"]
-    Bedrock["Bedrock Haiku 4.5<br/>THROTTLE or IGNORE"]
-    SNS --> Rem
-    Rem --> RB
-    Rem --> Bedrock
-  end
-
-  subgraph gate ["5 — Human gate"]
-    SES["SES email"]
-    Human["Approve / Decline"]
-    Click["Lambda b2b-aiops-approval<br/>Function URL + HMAC"]
-    Bedrock -->|THROTTLE| SES --> Human --> Click
-  end
-
-  subgraph enforce ["6 — Enforce and self-heal"]
-    DDB[("DynamoDB<br/>ai-throttle-config TTL")]
-    Poll["Auth poller 10s"]
-    R429["HTTP 429"]
-    Click -->|Approve| DDB --> Poll --> R429
-  end
-```
+<p align="center">
+  <img src="docs/assets/AIOPS.png" alt="B2B EKS human-gated AIOps workflow" width="1000" />
+</p>
 
 | Hop | Who acts | What a recruiter should see |
 |-----|----------|-----------------------------|
